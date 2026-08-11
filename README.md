@@ -50,7 +50,7 @@
 ## |오후|
 <br>
 
--depth 카메라를 통해 yolo모델 및 깊이 측정 테스트.
+- depth 카메라를 통해 yolo모델 및 깊이 측정 테스트.
 
 ### **활동:객체를 manipulator로 동작 설정**  
 - RGB-D 카메라로 얻은 좌표를 이용해 manipulaor로 객체를 잡기
