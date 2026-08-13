@@ -97,3 +97,16 @@
 
 ### **활동:manipulator-x의 좌표계산**
 - aruco 마커를 이용한 좌표 계산 이후에 이를 manipulator에 실행하기 위해 manipulator의 기준점을 잡고 잡기 기능을 구현.
+<br>
+
+# **8/13**
+## |오전|
+| 팀원 | 오우진 | 윤형식 | 정혜원 | 김헌주 |
+|---|---|---|---|---|
+| 활동 | 발표용 ppt제작 | manipulator 자세 교정 | yolo 인식 테스트 | manipulator 초기 위치 수정 |
+<br>
+
+### **활동:manipulator-x의 자세교정**
+- manipulator-x가 동작 중 다른 폐기물을 건들이지 않게 하기 위하여 집기 동작 후 joint의 각도를 위쪽으로 향하게 수정.
+- yolo카메라가 테스트.
+<br>
