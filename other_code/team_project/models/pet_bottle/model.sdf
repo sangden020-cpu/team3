@@ -1,0 +1,181 @@
+<?xml version="1.0"?>
+
+<sdf version="1.8">
+
+    <model name="pet_bottle">
+
+        <link name="pet_bottle_link">
+
+            <!-- ================================= -->
+            <!-- Bottle body                        -->
+            <!-- ================================= -->
+
+            <visual name="body_visual">
+
+                <pose>
+                    0 0 0.1 0 0 0
+                </pose>
+
+                <geometry>
+
+                    <cylinder>
+
+                        <radius>
+                            0.03
+                        </radius>
+
+                        <length>
+                            0.20
+                        </length>
+
+                    </cylinder>
+
+                </geometry>
+
+                <material>
+
+                    <ambient>
+                        0.3 0.5 0.8 1
+                    </ambient>
+
+                    <diffuse>
+                        0.3 0.5 0.8 1
+                    </diffuse>
+
+                    <specular>
+                        0.5 0.5 0.5 1
+                    </specular>
+
+                </material>
+
+            </visual>
+
+
+            <!-- ================================= -->
+            <!-- Bottle body collision              -->
+            <!-- ================================= -->
+
+            <collision name="body_collision">
+
+                <pose>
+                    0 0 0.1 0 0 0
+                </pose>
+
+                <geometry>
+
+                    <cylinder>
+
+                        <radius>
+                            0.03
+                        </radius>
+
+                        <length>
+                            0.20
+                        </length>
+
+                    </cylinder>
+
+                </geometry>
+
+            </collision>
+
+
+            <!-- ================================= -->
+            <!-- Bottle neck                         -->
+            <!-- ================================= -->
+
+            <visual name="neck_visual">
+
+                <pose>
+                    0 0 0.21 0 0 0
+                </pose>
+
+                <geometry>
+
+                    <cylinder>
+
+                        <radius>
+                            0.012
+                        </radius>
+
+                        <length>
+                            0.02
+                        </length>
+
+                    </cylinder>
+
+                </geometry>
+
+                <material>
+
+                    <ambient>
+                        0.3 0.5 0.8 1
+                    </ambient>
+
+                    <diffuse>
+                        0.3 0.5 0.8 1
+                    </diffuse>
+
+                </material>
+
+            </visual>
+
+
+            <collision name="neck_collision">
+
+                <pose>
+                    0 0 0.21 0 0 0
+                </pose>
+
+                <geometry>
+
+                    <cylinder>
+
+                        <radius>
+                            0.012
+                        </radius>
+
+                        <length>
+                            0.02
+                        </length>
+
+                    </cylinder>
+
+                </geometry>
+
+            </collision>
+
+
+            <!-- ================================= -->
+            <!-- Inertial                           -->
+            <!-- ================================= -->
+
+            <inertial>
+
+                <mass>
+                    0.02
+                </mass>
+
+                <inertia>
+
+                    <ixx>
+                        0.00005
+                    </ixx>
+
+                    <iyy>
+                        0.00005
+                    </iyy>
+
+                    <izz>
+                        0.00002
+                    </izz>
+
+                </inertia>
+
+            </inertial>
+
+        </link>
+
+    </model>
+
+</sdf>

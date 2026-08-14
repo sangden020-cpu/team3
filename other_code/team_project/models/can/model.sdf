@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+
+<sdf version="1.8">
+
+    <model name="can">
+
+        <link name="can_link">
+
+            <!-- ============================= -->
+            <!-- Pose                            -->
+            <!-- ============================= -->
+
+            <pose>
+                0 0 0.07 0 0 0
+            </pose>
+
+
+            <!-- ============================= -->
+            <!-- Visual                          -->
+            <!-- ============================= -->
+
+            <visual name="can_visual">
+
+                <geometry>
+
+                    <cylinder>
+
+                        <radius>
+                            0.0275
+                        </radius>
+
+                        <length>
+                            0.14
+                        </length>
+
+                    </cylinder>
+
+                </geometry>
+
+                <material>
+
+                    <ambient>
+                        0.7 0.7 0.7 1
+                    </ambient>
+
+                    <diffuse>
+                        0.7 0.7 0.7 1
+                    </diffuse>
+
+                    <specular>
+                        0.8 0.8 0.8 1
+                    </specular>
+
+                </material>
+
+            </visual>
+
+
+            <!-- ============================= -->
+            <!-- Collision                       -->
+            <!-- ============================= -->
+
+            <collision name="can_collision">
+
+                <geometry>
+
+                    <cylinder>
+
+                        <radius>
+                            0.0275
+                        </radius>
+
+                        <length>
+                            0.14
+                        </length>
+
+                    </cylinder>
+
+                </geometry>
+
+            </collision>
+
+
+            <!-- ============================= -->
+            <!-- Inertial                        -->
+            <!-- ============================= -->
+
+            <inertial>
+
+                <mass>
+                    0.015
+                </mass>
+
+                <inertia>
+
+                    <ixx>
+                        0.00002
+                    </ixx>
+
+                    <iyy>
+                        0.00002
+                    </iyy>
+
+                    <izz>
+                        0.00001
+                    </izz>
+
+                </inertia>
+
+            </inertial>
+
+        </link>
+
+    </model>
+
+</sdf>
