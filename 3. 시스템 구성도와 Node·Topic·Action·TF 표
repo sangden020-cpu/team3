@@ -42,6 +42,19 @@
 
 2. Node·Topic·Action·TF 표
 1) Node 표
+|Node|파일|역할|실행 형태|
+|---|---|---|---|
+|aruco_homography_calibration|aruco_homography_calibration.py|카메라 드라이버 + ArUco 캘리브레이션 + 좌표 변환 + 최근접 목표 선정|GUI 루프(자체 while) + `spin_once`|
+|waste_detector|detector.py|3-모델 병렬 추론, bbox 밑점 추출, 결과 발행|`rclpy.spin` + 30 Hz 타이머 + GUI|
+|waste_pick_node|robot_control.py|목표 검증·보정, 근사 IK, 12단계 Pick & Place|별도 spin 스레드 + CLI input 루프|
+|/arm_controller|ros2_control|4관절 궤적 추종|—|
+|/gripper_controller|ros2_control|그리퍼 위치/힘 제어|—|
+|controller_manager,robot_state_publisher|브링업 패키지|컨트롤러/TF 발행|—|
+
+
+
+
+
 |  `pick_and_place_node`    |  (본 프로젝트)          |  IK 계산, 시퀀스 제어, 사용자 인터페이스  |
 |  `/arm_controller`        |  ros2_control           |  4관절 궤적 추종 제어                    |
 |  `/gripper_controller`    |  ros2_control           |  그리퍼 위치/힘 제어                     |
