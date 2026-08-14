@@ -1,0 +1,127 @@
+## 1. 상태 머신과 오류 처리표
+
+### 1.1 캘리브레이션 노드 상태 머신
+
+~~~mermaid
+stateDiagram-v2
+    [*] --> CAMERA_INIT
+    CAMERA_INIT --> COLLECTING : 카메라 열기 성공
+    CAMERA_INIT --> [*] : 실패 (RuntimeError 종료)
+
+    COLLECTING --> COLLECTING : 매 프레임 ArUco 검출<br/>ID 1~4 위치 저장<br/>0.5s 미검출 마커 제거
+    COLLECTING --> LOCKED : ID 1~4 동시 확보<br/>→ H 계산 후 고정
+
+    LOCKED --> LOCKED : detections 수신 → 좌표 변환<br/>거리 정렬 → nearest 발행<br/>마우스 클릭 → 좌표 검증
+    LOCKED --> COLLECTING : 'r' 키 (reset)
+
+    LOCKED --> [*] : 'q' / 카메라 read 실패
+    COLLECTING --> [*] : 'q' / 카메라 read 실패
+~~~
+
+### 1.2 검출 노드 파이프라인 상태 (모델별 독립)
+
+~~~mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> IDLE
+    IDLE --> INFERRING : 최신 프레임 존재<br/>& future is None
+    INFERRING --> IDLE : future.done<br/>→ 결과 수거 (예외 시 빈 목록)
+~~~
+
+> 30 Hz 타이머: 결과 수거 → 재추론 시작 → 시각화 → JSON 발행
+> paper / pet / can 3개 모델이 각각 위 상태를 **독립적으로** 순환한다.
+
+### 1.3 Pick & Place 시퀀스 상태 머신 (waste_pick_node)
+
+~~~mermaid
+stateDiagram-v2
+    [*] --> WAIT_CMD
+    WAIT_CMD --> GET_TARGET : Enter 입력
+    GET_TARGET --> WAIT_CMD : 목표 없음 / 2s 초과 / 영역 밖<br/>(warn 후 복귀)
+    GET_TARGET --> S1 : 목표 유효<br/>→ 거리 가중 보정
+
+    S1  : [S1] GRIPPER_OPEN (0.019m)
+    S2a : [S2a] 정면 안전 자세 상승 (joint1=0)
+    S2b : [S2b] 공중 회전 → 물체 방향
+    S2c : [S2c] 물체 상공 이동 (Z_SAFE=0.30)
+    S3  : [S3] 하강 (PICK_Z[type])
+    S4  : [S4] GRIPPER_HOLD (0.003m) — 파지
+    S5  : [S5] +5cm 리프트
+    S6  : [S6] 안전 비행 자세 상승
+    S7  : [S7] 공중 회전 → 분류함 방향
+    S8  : [S8] 분류함 하강
+    S9  : [S9] GRIPPER_OPEN — 배치
+    S10 : [S10] 안전 자세 상승
+    S11 : [S11] 공중 회전 → 정면 복귀
+    S12 : [S12] HOME 복귀 [0, -1.05, 0.35, 0.70]
+
+    S1 --> S2a
+    S2a --> S2b
+    S2b --> S2c
+    S2c --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    S6 --> S7
+    S7 --> S8
+    S8 --> S9
+    S9 --> S10
+    S10 --> S11
+    S11 --> S12
+    S12 --> WAIT_CMD
+
+    note right of S4 : S1~S10 어느 단계든<br/>서버 미응답(False) 시<br/>시퀀스 중단 → WAIT_CMD
+~~~
+
+### 1.4 오류 처리표
+
+#### 1. aruco_homography_calibration
+
+| 오류 | 감지 조건 | 처리 | 복구 |
+|---|---|---|---|
+| 카메라 열기 실패 | `cap.isOpened() == False` | RuntimeError → 노드 종료 | 장치 경로/GStreamer 플러그인 확인 |
+| 프레임 read 실패 | `ret == False` | 에러 로그 후 루프 탈출·종료 | 케이블/전원 확인 후 재실행 |
+| 마커 순간 미검출 | 검출 목록에 없음 | 0.5 s간 이전 위치 유지 (hold) | 자동 |
+| 마커 장기 미검출 | hold 시간 초과 | 후보에서 제거, 미LOCK 상태 유지 | 마커 재노출 |
+| 캘리브레이션 오염(마커 이동 등) | 사용자 판단 | — | `r` 키로 reset → 재수집 |
+| Detection JSON 파싱 실패 | `JSONDecodeError` | 에러 로그, 해당 메시지 폐기 | 자동(다음 메시지) |
+| 좌표 필드 결손/형변환 실패 | `KeyError` 등 | 해당 객체만 skip | 자동 |
+| 미지원 type | can/pet/paper 외 | 해당 객체 필터링 | — |
+| H 미계산 상태 클릭 | `H is None` | "NOT READY" 안내 출력 | 마커 인식 후 재시도 |
+| H 역행렬 불가 | `LinAlgError` | 작업영역 표시만 생략 | reset 후 재캘리브레이션 |
+| Image 발행 예외 | cv_bridge 오류 | 에러 로그, 해당 프레임 skip | 자동 |
+
+#### 2. waste_detector
+
+| 오류 | 감지 조건 | 처리 | 복구 |
+|---|---|---|---|
+| API Key 미설정 | 환경변수 없음 | RuntimeError + 설정 명령 안내 | `export ROBOFLOW_API_KEY=...` |
+| 모델 로딩 실패 | `get_model` 예외 | 기동 실패 | 모델 ID/네트워크 확인 |
+| 인코딩 불일치 | `encoding != 'bgr8'` | 에러 로그, 프레임 폐기 | 발행측 확인 |
+| Image 버퍼 변환 실패 | reshape 예외 | 에러 로그, 프레임 폐기 | 자동 |
+| 추론 예외 (네트워크 등) | `infer` 예외 | 해당 모델만 빈 결과 반환 — 타 모델 영향 없음 | 자동 재시도(다음 주기) |
+| Future 결과 예외 | `future.result` 예외 | 해당 모델 결과 빈 목록으로 초기화 | 자동 |
+| 낮은 confidence | threshold 미달 | 해당 검출 제외 | — |
+
+#### 3. waste_pick_node
+
+| 오류 | 감지 조건 | 처리 | 복구 |
+|---|---|---|---|
+| 목표 없음 | target 필드 None | warn 후 명령 대기 복귀 | 물체 배치/인식 확인 |
+| 목표 stale | 수신 후 2.0 s 초과 | 목표 무효 처리 | 자동(새 목표 수신) |
+| 작업영역 밖 | X∉[0, 0.4] 또는 Y∉[−0.2, 0.2] | callback에서 저장 자체를 거부 | 물체 재배치 |
+| 분류 위치 미설정 | `BIN_POSES` 없음 | 에러 로그, 중단 | 좌표 등록 |
+| Action 서버 미응답 | `wait_for_server` 2 s 초과 | False → 시퀀스 즉시 중단 | 컨트롤러 재기동 |
+| 목표 JSON 파싱 실패 | 예외 | 조용히 폐기 | 자동 |
+
+#### 시스템 수준 알려진 한계 (개선 권장 사항)
+
+| # | 한계 | 영향 | 개선안 |
+|---|---|---|---|
+| 1 | Action 결과 미확인 (`send_goal_async` + sleep) | 궤적 실패·goal 거부를 감지 못하고 다음 단계 진행 | `spin_until_future_complete`로 goal 수락·result·error_code 검사 |
+| 2 | 파지 성공 여부 미검증 | 빈 그리퍼로 S5~S9 진행 가능 | GripperCommand result의 `reached_goal` 검사, 실패 시 재시도 |
+| 3 | 근사 IK의 자세·범위 한계 | 작업영역 가장자리·paper의 z=−0.07에서 오차 증대 | 해석적 IK로 교체 또는 구간별 보정 테이블 확대 |
+| 4 | Homography 평면 가정 | 높이가 큰 물체는 밑점이라도 잔여 오차 존재 | 물체별 높이 오프셋, 또는 카메라 자세 보정 |
+| 5 | 실행 중 목표 갱신 미반영 | 시퀀스 시작 시점 좌표로 고정 | 하강 직전 1회 재확인 추가 |
+| 6 | BIN 좌표(−0.18, ±0.13)는 근사 IK 학습 범위 밖(후방) | place 정확도 별도 실측 필요 | 분류함 자세를 관절각으로 직접 티칭 |
+| 7 | 캘리브레이션 노드에 GUI·카메라·변환이 집중 | 헤드리스 환경 실행 불가 | 표시 기능 분리(파라미터로 on/off) |
